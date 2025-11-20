@@ -22,6 +22,9 @@ Each dashboard runs as a separate application (typically on separate laptops) bu
   - `mobility` – main driving and battery HUD
   - `science` – science sensor and experiment panel
   - `arm` – manipulator control and feedback
+- Modular ROS 2 backend:
+  - Role-specific nodes: `MobilityNode`, `ScienceNode`, `ArmNode`, `CommsNode`
+  - Generic Qt/ROS bridge + worker thread in `core/`
 
 ---
 
@@ -30,36 +33,46 @@ Each dashboard runs as a separate application (typically on separate laptops) bu
 ```text
 karura_gui/
 ├── README.md
-├── pyproject.toml          # or setup.cfg + requirements.txt
 ├── requirements.txt
 ├── run/
-│   ├── run_mobility.sh
+│   ├── run_mobility.sh        # helper scripts to launch each dashboard
 │   ├── run_science.sh
 │   └── run_arm.sh
 └── src/
     └── dashboard/
         ├── __init__.py
-        ├── mobility_main.py
-        ├── main_science.py
-        ├── main_arm.py
-        ├── core/
-        │   ├── app.py              # Qt app bootstrap
-        │   ├── ros2_bridge.py      # ROS 2 <-> Qt bridge (Node + QThread)
-        │   ├── config.py           # topic names, role config, etc.
+        ├── main_mobility.py   # entry point for Mobility GUI
+        ├── main_science.py    # entry point for Science GUI
+        ├── main_arm.py        # entry point for Arm GUI
+        ├── core/              # shared Qt/ROS infrastructure
+        │   ├── app.py         # Qt app bootstrap (creates bridge + window)
+        │   ├── base_bridge.py # BaseROS2Bridge: generic Qt <-> ROS bridge
+        │   ├── ros2_worker.py # QThread that runs rclpy.spin_once()
+        │   ├── config.py      # topic names, role config, constants
         │   ├── logging_config.py
-        │   └── styles.qss
-        ├── mobility_main/
+        │   └── styles.qss     # global Qt stylesheet
+        ├── ros_backend/       # ROS 2 nodes for each dashboard role
         │   ├── __init__.py
-        │   ├── window.py           # MobilityMainWindow
+        │   ├── base_node.py        # BaseDashboardNode with _dispatch()
+        │   ├── mobility_node.py    # pubs/subs for mobility topics
+        │   ├── arm_node.py         # pubs/subs for arm topics
+        │   ├── science_node.py     # pubs/subs for science topics
+        │   └── comms_node.py       # pubs/subs for comms/health topics
+        ├── mobility/          # Mobility dashboard UI + bridge
+        │   ├── __init__.py
+        │   ├── bridge.py      # MobilityBridge (Qt signals + MobilityNode)
+        │   ├── window.py      # MobilityMainWindow (layouts, widgets)
+        │   ├── widgets.py     # reusable mobility-specific widgets
+        │   └── view_model.py  # optional data models / adapters
+        ├── science/           # Science dashboard UI + bridge
+        │   ├── __init__.py
+        │   ├── bridge.py      # ScienceBridge (Qt signals + ScienceNode)
+        │   ├── window.py      # ScienceMainWindow
         │   ├── widgets.py
         │   └── view_model.py
-        ├── science/
-        │   ├── __init__.py
-        │   ├── window.py           # ScienceMainWindow
-        │   ├── widgets.py
-        │   └── view_model.py
-        └── arm/
+        └── arm/               # Arm dashboard UI + bridge
             ├── __init__.py
-            ├── window.py           # ArmMainWindow
+            ├── bridge.py      # ArmBridge (Qt signals + ArmNode)
+            ├── window.py      # ArmMainWindow
             ├── widgets.py
             └── view_model.py
