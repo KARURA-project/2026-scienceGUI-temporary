@@ -9,7 +9,7 @@ class ROS2Worker(QThread):
         
     def run(self):
         try:
-            while self._running and rlcpy.ok():
+            while self._running and rclpy.ok():
                 rclpy.spin_once(self.node, timeout_sec=0.1)
         except Exception as e:
             print(f"ROS2Worker encountered an error: {e}")
