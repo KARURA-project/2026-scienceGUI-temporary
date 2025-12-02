@@ -1,5 +1,5 @@
-import rlcpy
-from rlcpy import Node  
+import rclpy
+from rclpy import Node  
 
 class BaseDashboardNode(Node):
     """
