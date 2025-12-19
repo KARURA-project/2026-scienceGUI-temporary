@@ -7,7 +7,7 @@ Usage:
     python main_science.py
 
 Environment:
-    ROS 2 must be sourced (i.e., 'source /opt/ros/<distro>/setup.bash')
+    ROS 2 Jazzy must be sourced (i.e., 'source /opt/ros/jazzy/setup.bash')
 """
 
 import sys

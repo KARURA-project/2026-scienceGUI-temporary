@@ -1,3 +1,4 @@
+pip-requirements
 PySide6>=6.7
-rclpy
+rclpy>=3.3.0  # ROS 2 Jazzy compatible
 pyyaml
