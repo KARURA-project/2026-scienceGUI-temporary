@@ -20,10 +20,10 @@ from sensor_msgs.msg import Image, NavSatFix
 class ScienceBridge(BaseROS2Bridge):
     """
     ROS 2 Bridge for the Science Dashboard.
-    
-    Defines Qt Signals that transfer data from the ScienceNode (running in 
+
+    Defines Qt Signals that transfer data from the ScienceNode (running in
     the ROS2Worker thread) to the ScienceMainWindow (running in the main thread).
-    
+
     Signal Flow:
     1. ROS 2 topic message arrives at ScienceNode callback
     2. Callback dispatches the message via __dispatch(key, msg)
@@ -31,66 +31,47 @@ class ScienceBridge(BaseROS2Bridge):
     4. Signal is received by ScienceMainWindow slots on the main thread
     5. Window updates UI widgets
     """
-    
-    # ----------------------------------------
-    # SIGNALS FOR CAMERA FEEDS
-    # ----------------------------------------
+
+    # Camera signals
     downward_cam_signal = Signal(Image)
     box_cam_signal = Signal(Image)
     fluorescence_cam_signal = Signal(Image)
-    
-    # ----------------------------------------
-    # SIGNALS FOR SENSOR DATA
-    # ----------------------------------------
+
+    # Sensor signals
     temperature_signal = Signal(Float64)
     humidity_signal = Signal(Float64)
     pressure_signal = Signal(Float64)
-    
-    # ----------------------------------------
-    # SIGNALS FOR GENERAL DATA
-    # ----------------------------------------
+
+    # General data signals
     roll_pitch_yaw_signal = Signal(Float64MultiArray)
     battery_data_signal = Signal(Int)
     gps_data_signal = Signal(NavSatFix)
-    
-    # Error signal
+
     error_signal = Signal(str)
 
     def __init__(self, node_name: str = "science_bridge_node"):
         """
         Initialize the Science Bridge.
-        
+
         Args:
             node_name: Name for the ROS 2 node
         """
-        # Initialize base bridge with ScienceNode
         super().__init__(ScienceNode, node_name)
-        
-        # Cast node to ScienceNode type for better IDE support
         self.science_node: ScienceNode = self.node
-        
-        # ----------------------------------------
-        # REGISTER CALLBACKS
-        # ----------------------------------------
-        # ROS data arrives at ScienceNode, which calls __dispatch(key, msg).
-        # We register emitter methods that take the message and emit signals.
-        
-        # Camera callbacks
+
+        # Register callbacks
         self.science_node.register_callback("downward_cam", self._emit_downward_cam)
         self.science_node.register_callback("box_cam", self._emit_box_cam)
         self.science_node.register_callback("fluorescence_cam", self._emit_fluorescence_cam)
-        
-        # Sensor callbacks
+
         self.science_node.register_callback("temperature", self._emit_temperature)
         self.science_node.register_callback("humidity", self._emit_humidity)
         self.science_node.register_callback("pressure", self._emit_pressure)
-        
-        # General data callbacks
+
         self.science_node.register_callback("roll_pitch_yaw", self._emit_roll_pitch_yaw)
         self.science_node.register_callback("battery_data", self._emit_battery_data)
         self.science_node.register_callback("gps_data", self._emit_gps_data)
-        
-        # Connect error signal from base bridge
+
         self.ros_error.connect(self._on_ros_error)
     
     # ----------------------------------------

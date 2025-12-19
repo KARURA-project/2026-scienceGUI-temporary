@@ -49,14 +49,12 @@ class ImageDisplayWidget(QWidget):
     def update_image(self, ros_image: ROSImage):
         """
         Convert ROS Image message to QPixmap and display.
-        
+
         Args:
             ros_image: sensor_msgs.msg.Image
         """
         try:
-            # Convert ROS image data to numpy array
             if ros_image.encoding == "rgb8":
-                # RGB image
                 data = np.frombuffer(ros_image.data, dtype=np.uint8)
                 data = data.reshape((ros_image.height, ros_image.width, 3))
                 q_image = QImage(
@@ -64,7 +62,6 @@ class ImageDisplayWidget(QWidget):
                     3 * ros_image.width, QImage.Format.Format_RGB888
                 )
             elif ros_image.encoding == "bgr8":
-                # BGR image (convert to RGB)
                 data = np.frombuffer(ros_image.data, dtype=np.uint8)
                 data = data.reshape((ros_image.height, ros_image.width, 3))
                 data = data[..., ::-1]  # BGR to RGB
@@ -73,7 +70,6 @@ class ImageDisplayWidget(QWidget):
                     3 * ros_image.width, QImage.Format.Format_RGB888
                 )
             elif ros_image.encoding == "mono8":
-                # Grayscale image
                 data = np.frombuffer(ros_image.data, dtype=np.uint8)
                 data = data.reshape((ros_image.height, ros_image.width))
                 q_image = QImage(
@@ -83,8 +79,7 @@ class ImageDisplayWidget(QWidget):
             else:
                 self.image_label.setText(f"Unsupported encoding: {ros_image.encoding}")
                 return
-            
-            # Scale image to fit widget
+
             pixmap = QPixmap.fromImage(q_image)
             scaled_pixmap = pixmap.scaledToWidth(
                 self.image_label.width(), Qt.TransformationMode.SmoothTransformation
@@ -98,8 +93,8 @@ class SensorGaugeWidget(QWidget):
     """
     Displays a single sensor value with unit and visual indicator.
     """
-    
-    def __init__(self, title: str, unit: str = "", min_val: float = 0, 
+
+    def __init__(self, title: str, unit: str = "", min_val: float = 0,
                  max_val: float = 100, parent=None):
         super().__init__(parent)
         self.title = title
@@ -107,42 +102,38 @@ class SensorGaugeWidget(QWidget):
         self.min_val = min_val
         self.max_val = max_val
         self.init_ui()
-    
+
     def init_ui(self):
         layout = QVBoxLayout()
-        
-        # Title
+
         title_label = QLabel(self.title)
         title_label.setFont(QFont("Arial", 10, QFont.Bold))
         layout.addWidget(title_label)
-        
-        # Value display
+
         self.value_label = QLabel("-- --")
         self.value_label.setFont(QFont("Courier", 14, QFont.Bold))
         self.value_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.value_label)
-        
-        # Status frame
+
         self.status_frame = QFrame()
         self.status_frame.setMinimumHeight(10)
         self.status_frame.setStyleSheet("background-color: #cccccc; border-radius: 3px;")
         layout.addWidget(self.status_frame)
-        
+
         self.setLayout(layout)
-    
+
     def update_value(self, msg: Float64):
         """Update the displayed sensor value."""
         value = msg.data
         self.value_label.setText(f"{value:.2f} {self.unit}")
-        
-        # Update status color based on range
+
         if value < self.min_val:
             color = "orange"
         elif value > self.max_val:
             color = "red"
         else:
             color = "green"
-        
+
         self.status_frame.setStyleSheet(f"background-color: {color}; border-radius: 3px;")
 
 

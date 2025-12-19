@@ -37,38 +37,29 @@ class ScienceMainWindow(QMainWindow):
     
     def init_ui(self):
         """Initialize the main UI layout."""
-        # Central widget
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        
+
         main_layout = QHBoxLayout()
-        
-        # ========================================
-        # LEFT PANEL: Camera Feeds (Tabbed)
-        # ========================================
+
+        # Camera feeds (tabbed)
         camera_tab = QTabWidget()
-        
-        # Downward camera
+
         self.downward_cam_widget = ImageDisplayWidget("Downward Camera")
         camera_tab.addTab(self.downward_cam_widget, "Downward")
-        
-        # Box camera
+
         self.box_cam_widget = ImageDisplayWidget("Science Box Camera")
         camera_tab.addTab(self.box_cam_widget, "Box")
-        
-        # Fluorescence camera
+
         self.fluorescence_cam_widget = ImageDisplayWidget("Fluorescence Camera")
         camera_tab.addTab(self.fluorescence_cam_widget, "Fluorescence")
-        
-        main_layout.addWidget(camera_tab, 3)  # 60% width
-        
-        # ========================================
-        # RIGHT PANEL: Telemetry & Status
-        # ========================================
+
+        main_layout.addWidget(camera_tab, 3)
+
+        # Telemetry panel
         right_layout = QVBoxLayout()
-        
-        # --- Sensor Telemetry Section ---
-        sensor_panel = TelemetryPanelWidget("Sensor Telemetry")
+
+        # Sensor telemetry
         self.temperature_label = SensorGaugeWidget(
             "Temperature", "°C", min_val=-10, max_val=50
         )
@@ -78,38 +69,34 @@ class ScienceMainWindow(QMainWindow):
         self.pressure_label = SensorGaugeWidget(
             "Pressure", "kPa", min_val=85, max_val=105
         )
-        
+
         sensor_group_layout = QVBoxLayout()
         sensor_group_layout.addWidget(self.temperature_label)
         sensor_group_layout.addWidget(self.humidity_label)
         sensor_group_layout.addWidget(self.pressure_label)
-        
+
         sensor_container = QWidget()
         sensor_container.setLayout(sensor_group_layout)
         right_layout.addWidget(sensor_container)
-        
-        # --- Battery Status Section ---
+
+        # Battery, IMU, GPS
         self.battery_widget = BatteryIndicatorWidget()
         right_layout.addWidget(self.battery_widget)
-        
-        # --- IMU Data Section ---
+
         self.imu_widget = IMUDisplayWidget()
         right_layout.addWidget(self.imu_widget)
-        
-        # --- GPS Data Section ---
+
         self.gps_widget = GPSDisplayWidget()
         right_layout.addWidget(self.gps_widget)
-        
+
         right_layout.addStretch()
-        
-        # Wrap right layout in a widget and add to main
+
         right_widget = QWidget()
         right_widget.setLayout(right_layout)
-        main_layout.addWidget(right_widget, 2)  # 40% width
-        
+        main_layout.addWidget(right_widget, 2)
+
         central_widget.setLayout(main_layout)
-        
-        # Apply stylesheet
+
         self.setStyleSheet("""
             QMainWindow {
                 background-color: #f0f0f0;
