@@ -5,7 +5,7 @@ import rclpy
 from PySide6.QtCore import QObject, Signal
 
 from .ros2_worker import ROS2Worker
-from karura_gui.backend.base_node import BaseDashboardNode
+from dashboard.backend.base_node import BaseDashboardNode
 
 
 class BaseROS2Bridge(QObject):

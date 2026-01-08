@@ -9,11 +9,11 @@ from typing import Type
 
 from PySide6.QtCore import QObject, Signal
 
-from karura_gui.backend.science_node import ScienceNode
-from karura_gui.core.base_bridge import BaseROS2Bridge
+from dashboard.backend.science_node import ScienceNode
+from dashboard.core.base_bridge import BaseROS2Bridge
 
 # Import ROS message types for signal type hints
-from std_msgs.msg import Float64, Float64MultiArray, Int
+from std_msgs.msg import Float64, Float64MultiArray, Int32
 from sensor_msgs.msg import Image, NavSatFix
 
 
@@ -44,7 +44,7 @@ class ScienceBridge(BaseROS2Bridge):
 
     # General data signals
     roll_pitch_yaw_signal = Signal(Float64MultiArray)
-    battery_data_signal = Signal(Int)
+    battery_data_signal = Signal(Int32)
     gps_data_signal = Signal(NavSatFix)
 
     error_signal = Signal(str)
@@ -135,7 +135,7 @@ class ScienceBridge(BaseROS2Bridge):
         except Exception as e:
             self.error_signal.emit(f"Error emitting roll_pitch_yaw: {e}")
     
-    def _emit_battery_data(self, msg: Int):
+    def _emit_battery_data(self, msg: Int32):
         """Emit battery status signal."""
         try:
             self.battery_data_signal.emit(msg)

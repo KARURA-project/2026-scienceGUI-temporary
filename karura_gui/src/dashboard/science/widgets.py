@@ -11,10 +11,10 @@ Reusable UI components for the Science Dashboard, including:
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QGridLayout
 )
-from PySide6.QtCore import Qt, QPixmap, QSize
-from PySide6.QtGui import QFont, QColor, QImage
+from PySide6.QtCore import Qt, QSize
+from PySide6.QtGui import QFont, QColor, QImage, QPixmap
 from sensor_msgs.msg import Image as ROSImage
-from std_msgs.msg import Float64, Int
+from std_msgs.msg import Float64, Int32
 import numpy as np
 
 
@@ -213,7 +213,7 @@ class BatteryIndicatorWidget(QWidget):
         
         self.setLayout(layout)
     
-    def update_battery(self, msg: Int):
+    def update_battery(self, msg: Int32):
         """Update battery percentage."""
         percentage = max(0, min(100, msg.data))
         self.percentage_label.setText(f"{percentage}%")

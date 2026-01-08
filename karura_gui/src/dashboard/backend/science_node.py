@@ -7,8 +7,8 @@ for the Karura dashboard GUI, including video streams and sensor data.
 TODO: Implement the Science Bridge to register PySide6 callbacks 
 for the topics dispatched here.
 """
-from rclpy.node import Node 
-from std_msgs.msg import Float64, Float64MultiArray, Int
+from rclpy.node import Node
+from std_msgs.msg import Float64, Float64MultiArray, Int32
 from sensor_msgs.msg import Image, NavSatFix
 from .base_node import BaseDashboardNode 
 
@@ -91,7 +91,7 @@ class ScienceNode(BaseDashboardNode):
         
         # Battery Data (Int)
         self.create_subscription(
-            Int,
+            Int32,
             "/battery_data",
             self._on_battery_data,
             10,
@@ -138,7 +138,7 @@ class ScienceNode(BaseDashboardNode):
     def _on_roll_pitch_yaw(self, msg: Float64MultiArray):
         self._BaseDashboardNode__dispatch("roll_pitch_yaw", msg)
         
-    def _on_battery_data(self, msg: Int):
+    def _on_battery_data(self, msg: Int32):
         self._BaseDashboardNode__dispatch("battery_data", msg)
 
     def _on_gps_data(self, msg: NavSatFix):
