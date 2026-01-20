@@ -9,12 +9,13 @@ Reusable UI components for the Science Dashboard, including:
 """
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QGridLayout
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QGridLayout,
+    QPushButton, QSlider, QSpinBox, QDoubleSpinBox
 )
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt, QSize, Signal
 from PySide6.QtGui import QFont, QColor, QImage, QPixmap
 from sensor_msgs.msg import Image as ROSImage
-from std_msgs.msg import Float64, Int32
+from std_msgs.msg import Float64, Int32, Bool, String
 import numpy as np
 
 
@@ -328,3 +329,222 @@ class GPSDisplayWidget(QWidget):
             self.gps_labels['altitude'].setText(f"{altitude:.2f}m")
         except Exception as e:
             print(f"Error updating GPS: {e}")
+
+
+class StepperMotorControlWidget(QWidget):
+    """
+    Control widget for NEMA17 stepper motor (27:1 gearbox).
+    
+    Provides:
+    - Position control (target position setting)
+    - Velocity control (speed limiting)
+    - Enable/Disable controls
+    - Emergency stop
+    - Home button
+    - Real-time telemetry display (position, velocity, current)
+    """
+    
+    # Signals for command emission
+    set_position_signal = Signal(float)  # Target position in degrees
+    set_velocity_signal = Signal(float)  # Max velocity in deg/s
+    enable_signal = Signal(bool)         # Enable/disable motor
+    stop_signal = Signal()               # Emergency stop
+    home_signal = Signal()               # Home position
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.init_ui()
+    
+    def init_ui(self):
+        """Initialize the stepper motor control UI."""
+        main_layout = QVBoxLayout()
+        
+        # Title
+        title_label = QLabel("NEMA17 Stepper Motor (27:1 Gearbox)")
+        title_label.setFont(QFont("Arial", 12, QFont.Bold))
+        main_layout.addWidget(title_label)
+        
+        # Status section
+        status_layout = QHBoxLayout()
+        
+        self.status_label = QLabel("Status: DISCONNECTED")
+        self.status_label.setFont(QFont("Courier", 10))
+        status_layout.addWidget(self.status_label)
+        
+        self.enabled_indicator = QFrame()
+        self.enabled_indicator.setMaximumSize(20, 20)
+        self.enabled_indicator.setStyleSheet("background-color: red; border-radius: 10px;")
+        status_layout.addWidget(self.enabled_indicator)
+        
+        status_layout.addStretch()
+        main_layout.addLayout(status_layout)
+        
+        # Control buttons
+        button_layout = QHBoxLayout()
+        
+        self.enable_button = QPushButton("Enable")
+        self.enable_button.setCheckable(True)
+        self.enable_button.toggled.connect(self._on_enable_toggled)
+        button_layout.addWidget(self.enable_button)
+        
+        self.stop_button = QPushButton("Emergency Stop")
+        self.stop_button.setStyleSheet("background-color: #ff6666;")
+        self.stop_button.clicked.connect(self.stop_signal.emit)
+        button_layout.addWidget(self.stop_button)
+        
+        self.home_button = QPushButton("Home")
+        self.home_button.clicked.connect(self.home_signal.emit)
+        button_layout.addWidget(self.home_button)
+        
+        main_layout.addLayout(button_layout)
+        
+        # Position control
+        pos_control_layout = QGridLayout()
+        
+        pos_label = QLabel("Target Position:")
+        pos_label.setFont(QFont("Arial", 10, QFont.Bold))
+        pos_control_layout.addWidget(pos_label, 0, 0)
+        
+        self.position_spinbox = QDoubleSpinBox()
+        self.position_spinbox.setRange(-360000, 360000)
+        self.position_spinbox.setSingleStep(10)
+        self.position_spinbox.setSuffix(" °")
+        self.position_spinbox.setDecimals(2)
+        pos_control_layout.addWidget(self.position_spinbox, 0, 1)
+        
+        pos_button = QPushButton("Set Position")
+        pos_button.clicked.connect(lambda: self.set_position_signal.emit(self.position_spinbox.value()))
+        pos_control_layout.addWidget(pos_button, 0, 2)
+        
+        main_layout.addLayout(pos_control_layout)
+        
+        # Velocity control
+        vel_control_layout = QGridLayout()
+        
+        vel_label = QLabel("Velocity Limit:")
+        vel_label.setFont(QFont("Arial", 10, QFont.Bold))
+        vel_control_layout.addWidget(vel_label, 0, 0)
+        
+        self.velocity_spinbox = QDoubleSpinBox()
+        self.velocity_spinbox.setRange(0, 10000)
+        self.velocity_spinbox.setSingleStep(10)
+        self.velocity_spinbox.setSuffix(" °/s")
+        self.velocity_spinbox.setValue(100)
+        self.velocity_spinbox.setDecimals(2)
+        vel_control_layout.addWidget(self.velocity_spinbox, 0, 1)
+        
+        vel_button = QPushButton("Set Velocity")
+        vel_button.clicked.connect(lambda: self.set_velocity_signal.emit(self.velocity_spinbox.value()))
+        vel_control_layout.addWidget(vel_button, 0, 2)
+        
+        main_layout.addLayout(vel_control_layout)
+        
+        # Telemetry display
+        telemetry_layout = QGridLayout()
+        
+        telemetry_label = QLabel("Telemetry")
+        telemetry_label.setFont(QFont("Arial", 11, QFont.Bold))
+        telemetry_layout.addWidget(telemetry_label, 0, 0, 1, 2)
+        
+        # Current Position
+        current_pos_label = QLabel("Current Position:")
+        current_pos_label.setFont(QFont("Arial", 9))
+        telemetry_layout.addWidget(current_pos_label, 1, 0)
+        
+        self.current_position_label = QLabel("-- °")
+        self.current_position_label.setFont(QFont("Courier", 9))
+        telemetry_layout.addWidget(self.current_position_label, 1, 1)
+        
+        # Target Position Display
+        target_pos_label = QLabel("Target Position:")
+        target_pos_label.setFont(QFont("Arial", 9))
+        telemetry_layout.addWidget(target_pos_label, 2, 0)
+        
+        self.target_position_label = QLabel("-- °")
+        self.target_position_label.setFont(QFont("Courier", 9))
+        telemetry_layout.addWidget(self.target_position_label, 2, 1)
+        
+        # Current Velocity
+        current_vel_label = QLabel("Current Velocity:")
+        current_vel_label.setFont(QFont("Arial", 9))
+        telemetry_layout.addWidget(current_vel_label, 3, 0)
+        
+        self.current_velocity_label = QLabel("-- °/s")
+        self.current_velocity_label.setFont(QFont("Courier", 9))
+        telemetry_layout.addWidget(self.current_velocity_label, 3, 1)
+        
+        # Motor Current
+        motor_current_label = QLabel("Motor Current:")
+        motor_current_label.setFont(QFont("Arial", 9))
+        telemetry_layout.addWidget(motor_current_label, 4, 0)
+        
+        self.motor_current_label = QLabel("-- A")
+        self.motor_current_label.setFont(QFont("Courier", 9))
+        telemetry_layout.addWidget(self.motor_current_label, 4, 1)
+        
+        # Error status
+        error_label = QLabel("Error Status:")
+        error_label.setFont(QFont("Arial", 9))
+        telemetry_layout.addWidget(error_label, 5, 0)
+        
+        self.error_status_label = QLabel("OK")
+        self.error_status_label.setFont(QFont("Courier", 9))
+        self.error_status_label.setStyleSheet("color: green;")
+        telemetry_layout.addWidget(self.error_status_label, 5, 1)
+        
+        main_layout.addLayout(telemetry_layout)
+        
+        main_layout.addStretch()
+        self.setLayout(main_layout)
+    
+    def _on_enable_toggled(self, checked: bool):
+        """Handle enable button toggle."""
+        self.enable_signal.emit(checked)
+    
+    def update_position(self, msg: Float64):
+        """Update current position display."""
+        self.current_position_label.setText(f"{msg.data:.2f}°")
+    
+    def update_target_position(self, msg: Float64):
+        """Update target position display."""
+        self.target_position_label.setText(f"{msg.data:.2f}°")
+    
+    def update_velocity(self, msg: Float64):
+        """Update current velocity display."""
+        self.current_velocity_label.setText(f"{msg.data:.2f}°/s")
+    
+    def update_current(self, msg: Float64):
+        """Update motor current display."""
+        # Clamp at max current (1.68A) for color indication
+        current_amps = msg.data
+        self.motor_current_label.setText(f"{current_amps:.3f}A")
+        
+        # Color code based on current
+        if current_amps > 1.5:
+            self.motor_current_label.setStyleSheet("color: red;")
+        elif current_amps > 1.0:
+            self.motor_current_label.setStyleSheet("color: orange;")
+        else:
+            self.motor_current_label.setStyleSheet("color: green;")
+    
+    def update_enabled(self, msg: Bool):
+        """Update enabled status indicator."""
+        is_enabled = msg.data
+        self.enable_button.setChecked(is_enabled)
+        
+        if is_enabled:
+            self.enabled_indicator.setStyleSheet("background-color: green; border-radius: 10px;")
+            self.status_label.setText("Status: ENABLED")
+        else:
+            self.enabled_indicator.setStyleSheet("background-color: red; border-radius: 10px;")
+            self.status_label.setText("Status: DISABLED")
+    
+    def update_error(self, msg: String):
+        """Update error status display."""
+        error_text = msg.data
+        if error_text and error_text.strip():
+            self.error_status_label.setText(f"ERROR: {error_text}")
+            self.error_status_label.setStyleSheet("color: red;")
+        else:
+            self.error_status_label.setText("OK")
+            self.error_status_label.setStyleSheet("color: green;")

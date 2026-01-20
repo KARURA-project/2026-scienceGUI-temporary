@@ -2,13 +2,14 @@
 ScienceNode
 
 ROS 2 node responsible for science and visualization-related topics
-for the Karura dashboard GUI, including video streams and sensor data.
+for the Karura dashboard GUI, including video streams, sensor data,
+and stepper motor control.
 
 TODO: Implement the Science Bridge to register PySide6 callbacks 
 for the topics dispatched here.
 """
 from rclpy.node import Node
-from std_msgs.msg import Float64, Float64MultiArray, Int32
+from std_msgs.msg import Float64, Float64MultiArray, Int32, Bool, String
 from sensor_msgs.msg import Image, NavSatFix
 from .base_node import BaseDashboardNode 
 
@@ -16,6 +17,12 @@ class ScienceNode(BaseDashboardNode):
     """
     Science dashboard ROS 2 node.
     Default node name: "karura_science_gui"
+    
+    Subscribes to:
+    - Camera feeds (downward, box, fluorescence)
+    - Sensor data (temperature, humidity, pressure)
+    - IMU, GPS, and battery data
+    - Stepper motor telemetry (position, velocity, current, status)
     """
 
     def __init__(self, node_name: str = "karura_science_gui"):
@@ -104,6 +111,59 @@ class ScienceNode(BaseDashboardNode):
             self._on_gps_data,
             10,
         )
+        
+        # ----------------------------------------------------
+        # Subscribers for Stepper Motor Telemetry
+        # (NEMA17 - 1.8 Degree - 1.68A Stepper - 27:1 Gearbox)
+        # ----------------------------------------------------
+        
+        # Stepper motor current position (degrees)
+        self.create_subscription(
+            Float64,
+            "/stepper/position",
+            self._on_stepper_position,
+            10,
+        )
+        
+        # Stepper motor current velocity (degrees per second)
+        self.create_subscription(
+            Float64,
+            "/stepper/velocity",
+            self._on_stepper_velocity,
+            10,
+        )
+        
+        # Stepper motor current draw (Amperes)
+        self.create_subscription(
+            Float64,
+            "/stepper/current",
+            self._on_stepper_current,
+            10,
+        )
+        
+        # Stepper motor enabled status
+        self.create_subscription(
+            Bool,
+            "/stepper/enabled",
+            self._on_stepper_enabled,
+            10,
+        )
+        
+        # Stepper motor error status
+        self.create_subscription(
+            String,
+            "/stepper/error",
+            self._on_stepper_error,
+            10,
+        )
+        
+        # Stepper motor target position (degrees)
+        self.create_subscription(
+            Float64,
+            "/stepper/target_position",
+            self._on_stepper_target_position,
+            10,
+        )
 
 
     # ----------------------------------------------------
@@ -143,3 +203,28 @@ class ScienceNode(BaseDashboardNode):
 
     def _on_gps_data(self, msg: NavSatFix):
         self._BaseDashboardNode__dispatch("gps_data", msg)
+    
+    # --- Stepper Motor Callbacks ---
+    def _on_stepper_position(self, msg: Float64):
+        """Handle stepper motor position update."""
+        self._BaseDashboardNode__dispatch("stepper_position", msg)
+    
+    def _on_stepper_velocity(self, msg: Float64):
+        """Handle stepper motor velocity update."""
+        self._BaseDashboardNode__dispatch("stepper_velocity", msg)
+    
+    def _on_stepper_current(self, msg: Float64):
+        """Handle stepper motor current update."""
+        self._BaseDashboardNode__dispatch("stepper_current", msg)
+    
+    def _on_stepper_enabled(self, msg: Bool):
+        """Handle stepper motor enabled status update."""
+        self._BaseDashboardNode__dispatch("stepper_enabled", msg)
+    
+    def _on_stepper_error(self, msg: String):
+        """Handle stepper motor error status update."""
+        self._BaseDashboardNode__dispatch("stepper_error", msg)
+    
+    def _on_stepper_target_position(self, msg: Float64):
+        """Handle stepper motor target position update."""
+        self._BaseDashboardNode__dispatch("stepper_target_position", msg)

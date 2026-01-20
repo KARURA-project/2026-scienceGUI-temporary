@@ -13,7 +13,8 @@ from PySide6.QtGui import QFont
 
 from .widgets import (
     ImageDisplayWidget, SensorGaugeWidget, TelemetryPanelWidget,
-    BatteryIndicatorWidget, IMUDisplayWidget, GPSDisplayWidget
+    BatteryIndicatorWidget, IMUDisplayWidget, GPSDisplayWidget,
+    StepperMotorControlWidget
 )
 
 
@@ -26,12 +27,13 @@ class ScienceMainWindow(QMainWindow):
     - Sensor telemetry (temperature, humidity, pressure)
     - IMU and GPS data
     - Battery status
+    - NEMA17 stepper motor control (27:1 gearbox)
     """
     
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Karura Science Dashboard")
-        self.setGeometry(100, 100, 1400, 900)
+        self.setGeometry(100, 100, 1600, 900)
         
         self.init_ui()
     
@@ -88,6 +90,10 @@ class ScienceMainWindow(QMainWindow):
 
         self.gps_widget = GPSDisplayWidget()
         right_layout.addWidget(self.gps_widget)
+        
+        # Stepper motor control
+        self.stepper_widget = StepperMotorControlWidget()
+        right_layout.addWidget(self.stepper_widget)
 
         right_layout.addStretch()
 
@@ -138,6 +144,14 @@ class ScienceMainWindow(QMainWindow):
         bridge.roll_pitch_yaw_signal.connect(self.on_imu_update)
         bridge.battery_data_signal.connect(self.on_battery_update)
         bridge.gps_data_signal.connect(self.on_gps_update)
+        
+        # Stepper motor signals
+        bridge.stepper_position_signal.connect(self.on_stepper_position_update)
+        bridge.stepper_velocity_signal.connect(self.on_stepper_velocity_update)
+        bridge.stepper_current_signal.connect(self.on_stepper_current_update)
+        bridge.stepper_enabled_signal.connect(self.on_stepper_enabled_update)
+        bridge.stepper_error_signal.connect(self.on_stepper_error_update)
+        bridge.stepper_target_position_signal.connect(self.on_stepper_target_position_update)
     
     # ========================================
     # SIGNAL HANDLERS
@@ -178,3 +192,27 @@ class ScienceMainWindow(QMainWindow):
     def on_gps_update(self, msg):
         """Handle GPS data update."""
         self.gps_widget.update_gps(msg)
+    
+    def on_stepper_position_update(self, msg):
+        """Handle stepper motor position update."""
+        self.stepper_widget.update_position(msg)
+    
+    def on_stepper_velocity_update(self, msg):
+        """Handle stepper motor velocity update."""
+        self.stepper_widget.update_velocity(msg)
+    
+    def on_stepper_current_update(self, msg):
+        """Handle stepper motor current update."""
+        self.stepper_widget.update_current(msg)
+    
+    def on_stepper_enabled_update(self, msg):
+        """Handle stepper motor enabled status update."""
+        self.stepper_widget.update_enabled(msg)
+    
+    def on_stepper_error_update(self, msg):
+        """Handle stepper motor error status update."""
+        self.stepper_widget.update_error(msg)
+    
+    def on_stepper_target_position_update(self, msg):
+        """Handle stepper motor target position update."""
+        self.stepper_widget.update_target_position(msg)

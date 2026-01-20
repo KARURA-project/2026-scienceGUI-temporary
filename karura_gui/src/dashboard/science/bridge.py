@@ -13,7 +13,7 @@ from dashboard.backend.science_node import ScienceNode
 from dashboard.core.base_bridge import BaseROS2Bridge
 
 # Import ROS message types for signal type hints
-from std_msgs.msg import Float64, Float64MultiArray, Int32
+from std_msgs.msg import Float64, Float64MultiArray, Int32, Bool, String
 from sensor_msgs.msg import Image, NavSatFix
 
 
@@ -46,6 +46,14 @@ class ScienceBridge(BaseROS2Bridge):
     roll_pitch_yaw_signal = Signal(Float64MultiArray)
     battery_data_signal = Signal(Int32)
     gps_data_signal = Signal(NavSatFix)
+    
+    # Stepper motor signals
+    stepper_position_signal = Signal(Float64)
+    stepper_velocity_signal = Signal(Float64)
+    stepper_current_signal = Signal(Float64)
+    stepper_enabled_signal = Signal(Bool)
+    stepper_error_signal = Signal(String)
+    stepper_target_position_signal = Signal(Float64)
 
     error_signal = Signal(str)
 
@@ -71,6 +79,14 @@ class ScienceBridge(BaseROS2Bridge):
         self.science_node.register_callback("roll_pitch_yaw", self._emit_roll_pitch_yaw)
         self.science_node.register_callback("battery_data", self._emit_battery_data)
         self.science_node.register_callback("gps_data", self._emit_gps_data)
+        
+        # Register stepper motor callbacks
+        self.science_node.register_callback("stepper_position", self._emit_stepper_position)
+        self.science_node.register_callback("stepper_velocity", self._emit_stepper_velocity)
+        self.science_node.register_callback("stepper_current", self._emit_stepper_current)
+        self.science_node.register_callback("stepper_enabled", self._emit_stepper_enabled)
+        self.science_node.register_callback("stepper_error", self._emit_stepper_error)
+        self.science_node.register_callback("stepper_target_position", self._emit_stepper_target_position)
 
         self.ros_error.connect(self._on_ros_error)
     
@@ -150,9 +166,47 @@ class ScienceBridge(BaseROS2Bridge):
             self.error_signal.emit(f"Error emitting gps_data: {e}")
     
     # ----------------------------------------
-    # ERROR HANDLING
+    # EMITTER METHODS - STEPPER MOTOR
     # ----------------------------------------
     
-    def _on_ros_error(self, error_msg: str):
-        """Handle errors from ROS 2 worker thread."""
-        self.error_signal.emit(f"ROS 2 Error: {error_msg}")
+    def _emit_stepper_position(self, msg: Float64):
+        """Emit stepper position signal."""
+        try:
+            self.stepper_position_signal.emit(msg)
+        except Exception as e:
+            self.error_signal.emit(f"Error emitting stepper_position: {e}")
+    
+    def _emit_stepper_velocity(self, msg: Float64):
+        """Emit stepper velocity signal."""
+        try:
+            self.stepper_velocity_signal.emit(msg)
+        except Exception as e:
+            self.error_signal.emit(f"Error emitting stepper_velocity: {e}")
+    
+    def _emit_stepper_current(self, msg: Float64):
+        """Emit stepper current signal."""
+        try:
+            self.stepper_current_signal.emit(msg)
+        except Exception as e:
+            self.error_signal.emit(f"Error emitting stepper_current: {e}")
+    
+    def _emit_stepper_enabled(self, msg: Bool):
+        """Emit stepper enabled status signal."""
+        try:
+            self.stepper_enabled_signal.emit(msg)
+        except Exception as e:
+            self.error_signal.emit(f"Error emitting stepper_enabled: {e}")
+    
+    def _emit_stepper_error(self, msg: String):
+        """Emit stepper error status signal."""
+        try:
+            self.stepper_error_signal.emit(msg)
+        except Exception as e:
+            self.error_signal.emit(f"Error emitting stepper_error: {e}")
+    
+    def _emit_stepper_target_position(self, msg: Float64):
+        """Emit stepper target position signal."""
+        try:
+            self.stepper_target_position_signal.emit(msg)
+        except Exception as e:
+            self.error_signal.emit(f"Error emitting stepper_target_position: {e}")
