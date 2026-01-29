@@ -56,6 +56,20 @@ class ScienceBridge(BaseROS2Bridge):
     stepper_target_position_signal = Signal(Float64)
 
     error_signal = Signal(str)
+    
+    def _on_ros_error(self, err) -> None:
+        """
+        Handler for ROS-side errors emitted by BaseROS2Bridge.
+        Keeps UI informed and prevents crashes.
+        """
+        try:
+            msg = str(err)
+            # Emit to UI / log panel
+            self.error_signal.emit(msg)
+        except Exception as e:
+            # Last-resort: avoid raising inside error handler
+            print(f"[ScienceBridge] Failed in _on_ros_error: {e} (original: {err})")
+
 
     def __init__(self, node_name: str = "science_bridge_node"):
         """

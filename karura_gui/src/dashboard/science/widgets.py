@@ -10,7 +10,7 @@ Reusable UI components for the Science Dashboard, including:
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QGridLayout,
-    QPushButton, QSlider, QSpinBox, QDoubleSpinBox
+    QPushButton, QSlider, QSpinBox, QDoubleSpinBox, QSizePolicy
 )
 from PySide6.QtCore import Qt, QSize, Signal
 from PySide6.QtGui import QFont, QColor, QImage, QPixmap
@@ -24,71 +24,82 @@ class ImageDisplayWidget(QWidget):
     Displays ROS Image messages as a pixmap.
     Handles conversion from ROS Image to QPixmap for display.
     """
-    
+
     def __init__(self, title: str = "Camera Feed", parent=None):
         super().__init__(parent)
         self.title = title
+        self._last_pixmap: QPixmap | None = None
         self.init_ui()
-    
+
     def init_ui(self):
         layout = QVBoxLayout()
-        
-        # Title label
-        title_label = QLabel(self.title)
-        title_label.setFont(QFont("Arial", 12, QFont.Bold))
-        layout.addWidget(title_label)
-        
+        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setSpacing(4)  # <-- keeps title tight to image
+
+        # Title label (aligned directly over image)
+        self.title_label = QLabel(self.title)
+        self.title_label.setFont(QFont("Arial", 12, QFont.Bold))
+        self.title_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.title_label)
+
         # Image display
         self.image_label = QLabel()
-        self.image_label.setMinimumSize(320, 240)
         self.image_label.setStyleSheet("border: 1px solid #cccccc; background-color: #000000;")
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self.image_label)
-        
+
+        # IMPORTANT: allow it to grow and fill the tab area
+        self.image_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.image_label.setMinimumSize(1, 1)
+
+        layout.addWidget(self.image_label, 1)  # <-- stretch
+
         self.setLayout(layout)
-    
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        # Re-scale last frame to new widget size
+        if self._last_pixmap is not None:
+            self._render_pixmap(self._last_pixmap)
+
+    def _render_pixmap(self, pixmap: QPixmap):
+        scaled = pixmap.scaled(
+            self.image_label.size(),
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        self.image_label.setPixmap(scaled)
+
     def update_image(self, ros_image: ROSImage):
         """
         Convert ROS Image message to QPixmap and display.
-
-        Args:
-            ros_image: sensor_msgs.msg.Image
         """
         try:
             if ros_image.encoding == "rgb8":
-                data = np.frombuffer(ros_image.data, dtype=np.uint8)
-                data = data.reshape((ros_image.height, ros_image.width, 3))
-                q_image = QImage(
-                    data.data, ros_image.width, ros_image.height,
-                    3 * ros_image.width, QImage.Format.Format_RGB888
-                )
+                data = np.frombuffer(ros_image.data, dtype=np.uint8).reshape((ros_image.height, ros_image.width, 3))
+                q_image = QImage(data.data, ros_image.width, ros_image.height, 3 * ros_image.width,
+                                 QImage.Format.Format_RGB888)
+
             elif ros_image.encoding == "bgr8":
-                data = np.frombuffer(ros_image.data, dtype=np.uint8)
-                data = data.reshape((ros_image.height, ros_image.width, 3))
-                data = data[..., ::-1]  # BGR to RGB
-                q_image = QImage(
-                    data.data, ros_image.width, ros_image.height,
-                    3 * ros_image.width, QImage.Format.Format_RGB888
-                )
+                data = np.frombuffer(ros_image.data, dtype=np.uint8).reshape((ros_image.height, ros_image.width, 3))
+                data = data[..., ::-1]  # BGR -> RGB
+                q_image = QImage(data.data, ros_image.width, ros_image.height, 3 * ros_image.width,
+                                 QImage.Format.Format_RGB888)
+
             elif ros_image.encoding == "mono8":
-                data = np.frombuffer(ros_image.data, dtype=np.uint8)
-                data = data.reshape((ros_image.height, ros_image.width))
-                q_image = QImage(
-                    data.data, ros_image.width, ros_image.height,
-                    ros_image.width, QImage.Format.Format_Grayscale8
-                )
+                data = np.frombuffer(ros_image.data, dtype=np.uint8).reshape((ros_image.height, ros_image.width))
+                q_image = QImage(data.data, ros_image.width, ros_image.height, ros_image.width,
+                                 QImage.Format.Format_Grayscale8)
+
             else:
                 self.image_label.setText(f"Unsupported encoding: {ros_image.encoding}")
                 return
 
             pixmap = QPixmap.fromImage(q_image)
-            scaled_pixmap = pixmap.scaledToWidth(
-                self.image_label.width(), Qt.TransformationMode.SmoothTransformation
-            )
-            self.image_label.setPixmap(scaled_pixmap)
-        except Exception as e:
-            self.image_label.setText(f"Error displaying image: {str(e)}")
+            self._last_pixmap = pixmap
+            self._render_pixmap(pixmap)
 
+        except Exception as e:
+            self.image_label.setText(f"Error displaying image: {e}")
 
 class SensorGaugeWidget(QWidget):
     """

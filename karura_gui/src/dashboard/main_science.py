@@ -14,7 +14,7 @@ import sys
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from karura_gui.science import ScienceMainWindow, ScienceBridge
-
+from pathlib import Path
 
 def main():
     """
@@ -22,6 +22,9 @@ def main():
     """
     # Create Qt application
     app = QApplication(sys.argv)
+    qss_path = Path(__file__).resolve().parent / "core" / "karura_dark.qss"
+    app.setStyleSheet(qss_path.read_text(encoding="utf-8"))
+    print(f"[STYLE] Loaded QSS: {qss_path}", file=sys.stderr, flush=True)
     
     try:
         # Initialize ROS 2 bridge and start worker thread

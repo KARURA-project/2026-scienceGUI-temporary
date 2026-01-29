@@ -6,7 +6,7 @@ combining camera feeds, sensor telemetry, and control panels.
 """
 
 from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QScrollArea
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QScrollArea, QSplitter
 )
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QFont
@@ -47,8 +47,29 @@ class ScienceMainWindow(QMainWindow):
         # Camera feeds (tabbed)
         camera_tab = QTabWidget()
 
+        downward_split = QSplitter(Qt.Orientation.Vertical)
+        downward_split.setHandleWidth(8)
+
+        downward_split.setStyleSheet("""
+        QSplitter::handle {
+            background: #cfcfcf;
+        }
+        QSplitter::handle:vertical {
+            height: 8px;
+        }
+        """)
+
+        self.panoramic_cam_widget = ImageDisplayWidget("Panoramic Camera")
         self.downward_cam_widget = ImageDisplayWidget("Downward Camera")
-        camera_tab.addTab(self.downward_cam_widget, "Downward")
+
+        downward_split.addWidget(self.panoramic_cam_widget)
+        downward_split.addWidget(self.downward_cam_widget)
+
+        # stretch: give the bottom feed more space by default (May need to tweak idk)
+        downward_split.setStretchFactor(0, 1)  
+        downward_split.setStretchFactor(1, 2)  
+
+        camera_tab.addTab(downward_split, "Downward")
 
         self.box_cam_widget = ImageDisplayWidget("Science Box Camera")
         camera_tab.addTab(self.box_cam_widget, "Box")
@@ -103,25 +124,25 @@ class ScienceMainWindow(QMainWindow):
 
         central_widget.setLayout(main_layout)
 
-        self.setStyleSheet("""
-            QMainWindow {
-                background-color: #f0f0f0;
-            }
-            QLabel {
-                color: #333333;
-            }
-            QTabWidget::pane {
-                border: 1px solid #cccccc;
-            }
-            QTabBar::tab {
-                background-color: #e0e0e0;
-                padding: 5px 15px;
-                margin-right: 2px;
-            }
-            QTabBar::tab:selected {
-                background-color: #ffffff;
-            }
-        """)
+        # self.setStyleSheet("""
+        #     QMainWindow {
+        #         background-color: #f0f0f0;
+        #     }
+        #     QLabel {
+        #         color: #333333;
+        #     }
+        #     QTabWidget::pane {
+        #         border: 1px solid #cccccc;
+        #     }
+        #     QTabBar::tab {
+        #         background-color: #e0e0e0;
+        #         padding: 5px 15px;
+        #         margin-right: 2px;
+        #     }
+        #     QTabBar::tab:selected {
+        #         background-color: #ffffff;
+        #     }
+        # """)
     
     def connect_signals(self, bridge):
         """
