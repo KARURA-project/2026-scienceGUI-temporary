@@ -181,6 +181,13 @@ def main():
     # Create Qt application
     app = QApplication(sys.argv)
 
+    # Load Stylesheet
+    qss_path = os.path.join(os.path.dirname(__file__), '..', 'core', 'karura_dark.qss')
+    if os.path.exists(qss_path):
+        with open(qss_path, "r", encoding="utf-8") as f:
+            app.setStyleSheet(f.read())
+        print(f"[STYLE] Loaded QSS: {qss_path}")
+
     try:
         # Create mock bridge and window
         mock_bridge = MockScienceBridge()
@@ -198,8 +205,8 @@ def main():
         timer.start(2000)  # Update every 2 seconds
 
         # Show window
-        window.move(100, 100)
         window.show()
+        window.move(100, 100)
         window.raise_()
         window.activateWindow()
         
