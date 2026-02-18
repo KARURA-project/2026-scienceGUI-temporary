@@ -6,7 +6,7 @@ combining camera feeds, sensor telemetry, and control panels.
 """
 
 from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QScrollArea, QSplitter
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QScrollArea, QSplitter, QGridLayout
 )
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QFont
@@ -33,7 +33,7 @@ class ScienceMainWindow(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Karura Science Dashboard")
-        self.setGeometry(100, 100, 1600, 900)
+        self.setGeometry(100, 100, 1280, 720)
         
         self.init_ui()
     
@@ -49,6 +49,10 @@ class ScienceMainWindow(QMainWindow):
 
         downward_split = QSplitter(Qt.Orientation.Vertical)
         downward_split.setHandleWidth(8)
+        # 2x2 Grid for 4 cameras
+        grid_widget = QWidget()
+        video_grid = QGridLayout()
+        grid_widget.setLayout(video_grid)
 
         downward_split.setStyleSheet("""
         QSplitter::handle {
@@ -59,15 +63,33 @@ class ScienceMainWindow(QMainWindow):
         }
         """)
 
+        # Create widgets for Tabs
         self.panoramic_cam_widget = ImageDisplayWidget("Panoramic Camera")
         self.downward_cam_widget = ImageDisplayWidget("Downward Camera")
+        self.box_cam_widget = ImageDisplayWidget("Science Box Camera")
+        self.fluorescence_cam_widget = ImageDisplayWidget("Fluorescence Camera")
+
+        # Create SEPARATE widgets for Grid (Quad View)
+        # Qt widgets cannot be in two places at once, so we need duplicates.
+        self.grid_downward = ImageDisplayWidget("Downward")
+        self.grid_panoramic = ImageDisplayWidget("Panoramic")
+        self.grid_box = ImageDisplayWidget("Box")
+        self.grid_fluorescence = ImageDisplayWidget("Fluorescence")
 
         downward_split.addWidget(self.panoramic_cam_widget)
         downward_split.addWidget(self.downward_cam_widget)
 
+        # Add to grid (Row, Column)
+        video_grid.addWidget(self.grid_downward, 0, 0)
+        video_grid.addWidget(self.grid_panoramic, 0, 1)
+        video_grid.addWidget(self.grid_box, 1, 0)
+        video_grid.addWidget(self.grid_fluorescence, 1, 1)
+
         # stretch: give the bottom feed more space by default (May need to tweak idk)
         downward_split.setStretchFactor(0, 1)  
         downward_split.setStretchFactor(1, 2)  
+        # Add the grid tab
+        camera_tab.addTab(grid_widget, "Quad View")
 
         camera_tab.addTab(downward_split, "Downward")
 
@@ -153,6 +175,7 @@ class ScienceMainWindow(QMainWindow):
         """
         # Camera signals
         bridge.downward_cam_signal.connect(self.on_downward_cam_update)
+        bridge.panoramic_cam_signal.connect(self.on_panoramic_cam_update)
         bridge.box_cam_signal.connect(self.on_box_cam_update)
         bridge.fluorescence_cam_signal.connect(self.on_fluorescence_cam_update)
         
@@ -181,14 +204,22 @@ class ScienceMainWindow(QMainWindow):
     def on_downward_cam_update(self, msg):
         """Handle downward camera image update."""
         self.downward_cam_widget.update_image(msg)
+        self.grid_downward.update_image(msg)
     
+    def on_panoramic_cam_update(self, msg):
+        """Handle panoramic camera image update."""
+        self.panoramic_cam_widget.update_image(msg)
+        self.grid_panoramic.update_image(msg)
+
     def on_box_cam_update(self, msg):
         """Handle science box camera image update."""
         self.box_cam_widget.update_image(msg)
+        self.grid_box.update_image(msg)
     
     def on_fluorescence_cam_update(self, msg):
         """Handle fluorescence camera image update."""
         self.fluorescence_cam_widget.update_image(msg)
+        self.grid_fluorescence.update_image(msg)
     
     def on_temperature_update(self, msg):
         """Handle temperature sensor update."""

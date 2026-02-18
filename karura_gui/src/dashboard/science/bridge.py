@@ -34,6 +34,7 @@ class ScienceBridge(BaseROS2Bridge):
 
     # Camera signals
     downward_cam_signal = Signal(Image)
+    panoramic_cam_signal = Signal(Image)
     box_cam_signal = Signal(Image)
     fluorescence_cam_signal = Signal(Image)
 
@@ -83,6 +84,7 @@ class ScienceBridge(BaseROS2Bridge):
 
         # Register callbacks
         self.science_node.register_callback("downward_cam", self._emit_downward_cam)
+        self.science_node.register_callback("panoramic_cam", self._emit_panoramic_cam)
         self.science_node.register_callback("box_cam", self._emit_box_cam)
         self.science_node.register_callback("fluorescence_cam", self._emit_fluorescence_cam)
 
@@ -115,6 +117,13 @@ class ScienceBridge(BaseROS2Bridge):
         except Exception as e:
             self.error_signal.emit(f"Error emitting downward_cam: {e}")
     
+    def _emit_panoramic_cam(self, msg: Image):
+        """Emit panoramic camera image signal."""
+        try:
+            self.panoramic_cam_signal.emit(msg)
+        except Exception as e:
+            self.error_signal.emit(f"Error emitting panoramic_cam: {e}")
+
     def _emit_box_cam(self, msg: Image):
         """Emit science box camera image signal."""
         try:

@@ -43,8 +43,9 @@ class ImageDisplayWidget(QWidget):
         layout.addWidget(self.title_label)
 
         # Image display
-        self.image_label = QLabel()
-        self.image_label.setStyleSheet("border: 1px solid #cccccc; background-color: #000000;")
+        self.image_label = QLabel("NO SIGNAL")
+        self.image_label.setFont(QFont("Arial", 16, QFont.Bold))
+        self.image_label.setStyleSheet("border: 1px solid #3A2426; background-color: #0F0B0C; color: #555555;")
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # IMPORTANT: allow it to grow and fill the tab area

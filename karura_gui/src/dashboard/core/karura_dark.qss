@@ -206,7 +206,11 @@ QStatusBar {
 }
 
 /* ----- Camera surface convenience ----- */
-QLabel#videoSurface {
+QLabel#videoSurface,
+QLabel#videoSurface_TL,
+QLabel#videoSurface_TR,
+QLabel#videoSurface_BL,
+QLabel#videoSurface_BR {
     background: #0F0B0C;
     border: 1px solid #3A2426;
     border-radius: 12px;

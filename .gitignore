@@ -64,3 +64,4 @@ config/local/
 *.swo
 *.bak
 *.old
+venv_humble/
