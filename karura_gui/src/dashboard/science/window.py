@@ -47,57 +47,56 @@ class ScienceMainWindow(QMainWindow):
         # Camera feeds (tabbed)
         camera_tab = QTabWidget()
 
-        downward_split = QSplitter(Qt.Orientation.Vertical)
-        downward_split.setHandleWidth(8)
-        # 2x2 Grid for 4 cameras
-        grid_widget = QWidget()
-        video_grid = QGridLayout()
-        grid_widget.setLayout(video_grid)
-
-        downward_split.setStyleSheet("""
-        QSplitter::handle {
-            background: #cfcfcf;
-        }
-        QSplitter::handle:vertical {
-            height: 8px;
-        }
-        """)
-
         # Create widgets for Tabs
         self.panoramic_cam_widget = ImageDisplayWidget("Panoramic Camera")
-        self.downward_cam_widget = ImageDisplayWidget("Downward Camera")
-        self.box_cam_widget = ImageDisplayWidget("Science Box Camera")
-        self.fluorescence_cam_widget = ImageDisplayWidget("Fluorescence Camera")
+        self.downward_front_cam_widget = ImageDisplayWidget("Downward Front Camera")
+        self.downward_back_cam_widget = ImageDisplayWidget("Downward Back Camera")
+        self.arm_cam_widget = ImageDisplayWidget("Arm Camera")
+        #self.box_cam_widget = ImageDisplayWidget("Science Box Camera")
+        self.box_cam_widget = ImageDisplayWidget("Front Camera")
 
         # Create SEPARATE widgets for Grid (Quad View)
         # Qt widgets cannot be in two places at once, so we need duplicates.
-        self.grid_downward = ImageDisplayWidget("Downward")
         self.grid_panoramic = ImageDisplayWidget("Panoramic")
+        self.grid_downward_front = ImageDisplayWidget("Downward Front")
+        self.grid_downward_back = ImageDisplayWidget("Downward Back")
+        self.grid_arm = ImageDisplayWidget("Arm")
         self.grid_box = ImageDisplayWidget("Box")
-        self.grid_fluorescence = ImageDisplayWidget("Fluorescence")
+        self.grid_box = ImageDisplayWidget("Front")
 
-        downward_split.addWidget(self.panoramic_cam_widget)
-        downward_split.addWidget(self.downward_cam_widget)
+        # Quad View Layout: Panoramic on top, 2x2 Grid on bottom
+        quad_tab_widget = QWidget()
+        quad_layout = QVBoxLayout()
+        quad_tab_widget.setLayout(quad_layout)
+
+        # Top: Panoramic
+        quad_layout.addWidget(self.grid_panoramic, stretch=1)
+
+        # Bottom: 2x2 Grid
+        grid_container = QWidget()
+        video_grid = QGridLayout()
+        grid_container.setLayout(video_grid)
+        video_grid.setContentsMargins(0, 5, 0, 0)
+        video_grid.setSpacing(5)
 
         # Add to grid (Row, Column)
-        video_grid.addWidget(self.grid_downward, 0, 0)
-        video_grid.addWidget(self.grid_panoramic, 0, 1)
-        video_grid.addWidget(self.grid_box, 1, 0)
-        video_grid.addWidget(self.grid_fluorescence, 1, 1)
+        video_grid.addWidget(self.grid_downward_front, 0, 0)
+        video_grid.addWidget(self.grid_downward_back, 0, 1)
+        video_grid.addWidget(self.grid_arm, 1, 0)
+        video_grid.addWidget(self.grid_box, 1, 1)
+        
+        quad_layout.addWidget(grid_container, stretch=2)
 
-        # stretch: give the bottom feed more space by default (May need to tweak idk)
-        downward_split.setStretchFactor(0, 1)  
-        downward_split.setStretchFactor(1, 2)  
         # Add the grid tab
-        camera_tab.addTab(grid_widget, "Quad View")
+        camera_tab.addTab(quad_tab_widget, "Quad View")
 
-        camera_tab.addTab(downward_split, "Downward")
-
-        self.box_cam_widget = ImageDisplayWidget("Science Box Camera")
+        # Add individual tabs
+        camera_tab.addTab(self.downward_front_cam_widget, "Front")
+        camera_tab.addTab(self.downward_back_cam_widget, "Back")
+        camera_tab.addTab(self.arm_cam_widget, "Arm")
         camera_tab.addTab(self.box_cam_widget, "Box")
-
-        self.fluorescence_cam_widget = ImageDisplayWidget("Fluorescence Camera")
-        camera_tab.addTab(self.fluorescence_cam_widget, "Fluorescence")
+        camera_tab.addTab(self.box_cam_widget, "Front")
+        camera_tab.addTab(self.panoramic_cam_widget, "Panoramic")
 
         main_layout.addWidget(camera_tab, 3)
 
@@ -106,19 +105,32 @@ class ScienceMainWindow(QMainWindow):
 
         # Sensor telemetry
         self.temperature_label = SensorGaugeWidget(
-            "Temperature", "°C", min_val=-10, max_val=50
+            "Temperature", "°C", min_val=15, max_val=35
         )
         self.humidity_label = SensorGaugeWidget(
-            "Humidity", "%", min_val=0, max_val=100
+            "Humidity", "%", min_val=30, max_val=90
         )
         self.pressure_label = SensorGaugeWidget(
-            "Pressure", "kPa", min_val=85, max_val=105
+            "Pressure", "kPa", min_val=90, max_val=110
         )
+        
+        # New Sensors
+        self.uv_label = SensorGaugeWidget("UV Index", "", 0, 11)
+        self.co2_label = SensorGaugeWidget("CO2", "ppm", 400, 1500)
+        self.voc_label = SensorGaugeWidget("VOC", "ppb", 0, 500)
+        self.hcho_label = SensorGaugeWidget("HCHO", "mg/m³", 0, 0.1)
+        self.nh3_label = SensorGaugeWidget("NH3", "ppm", 0, 5)
 
-        sensor_group_layout = QVBoxLayout()
-        sensor_group_layout.addWidget(self.temperature_label)
-        sensor_group_layout.addWidget(self.humidity_label)
-        sensor_group_layout.addWidget(self.pressure_label)
+        # 8 sensors in 4 rows x 2 columns
+        sensor_group_layout = QGridLayout()
+        sensor_group_layout.addWidget(self.temperature_label, 0, 0)
+        sensor_group_layout.addWidget(self.humidity_label, 0, 1)
+        sensor_group_layout.addWidget(self.pressure_label, 1, 0)
+        sensor_group_layout.addWidget(self.uv_label, 1, 1)
+        sensor_group_layout.addWidget(self.co2_label, 2, 0)
+        sensor_group_layout.addWidget(self.voc_label, 2, 1)
+        sensor_group_layout.addWidget(self.hcho_label, 3, 0)
+        sensor_group_layout.addWidget(self.nh3_label, 3, 1)
 
         sensor_container = QWidget()
         sensor_container.setLayout(sensor_group_layout)
@@ -174,15 +186,23 @@ class ScienceMainWindow(QMainWindow):
             bridge: ScienceBridge instance
         """
         # Camera signals
-        bridge.downward_cam_signal.connect(self.on_downward_cam_update)
+        bridge.downward_front_cam_signal.connect(self.on_downward_front_cam_update)
+        bridge.downward_back_cam_signal.connect(self.on_downward_back_cam_update)
+        bridge.arm_cam_signal.connect(self.on_arm_cam_update)
         bridge.panoramic_cam_signal.connect(self.on_panoramic_cam_update)
         bridge.box_cam_signal.connect(self.on_box_cam_update)
-        bridge.fluorescence_cam_signal.connect(self.on_fluorescence_cam_update)
         
         # Sensor signals
         bridge.temperature_signal.connect(self.on_temperature_update)
         bridge.humidity_signal.connect(self.on_humidity_update)
         bridge.pressure_signal.connect(self.on_pressure_update)
+        
+        # New Sensor signals
+        bridge.uv_signal.connect(self.on_uv_update)
+        bridge.co2_signal.connect(self.on_co2_update)
+        bridge.voc_signal.connect(self.on_voc_update)
+        bridge.hcho_signal.connect(self.on_hcho_update)
+        bridge.nh3_signal.connect(self.on_nh3_update)
         
         # Other data signals
         bridge.roll_pitch_yaw_signal.connect(self.on_imu_update)
@@ -201,10 +221,20 @@ class ScienceMainWindow(QMainWindow):
     # SIGNAL HANDLERS
     # ========================================
     
-    def on_downward_cam_update(self, msg):
-        """Handle downward camera image update."""
-        self.downward_cam_widget.update_image(msg)
-        self.grid_downward.update_image(msg)
+    def on_downward_front_cam_update(self, msg):
+        """Handle downward front camera image update."""
+        self.downward_front_cam_widget.update_image(msg)
+        self.grid_downward_front.update_image(msg)
+
+    def on_downward_back_cam_update(self, msg):
+        """Handle downward back camera image update."""
+        self.downward_back_cam_widget.update_image(msg)
+        self.grid_downward_back.update_image(msg)
+
+    def on_arm_cam_update(self, msg):
+        """Handle arm camera image update."""
+        self.arm_cam_widget.update_image(msg)
+        self.grid_arm.update_image(msg)
     
     def on_panoramic_cam_update(self, msg):
         """Handle panoramic camera image update."""
@@ -215,11 +245,6 @@ class ScienceMainWindow(QMainWindow):
         """Handle science box camera image update."""
         self.box_cam_widget.update_image(msg)
         self.grid_box.update_image(msg)
-    
-    def on_fluorescence_cam_update(self, msg):
-        """Handle fluorescence camera image update."""
-        self.fluorescence_cam_widget.update_image(msg)
-        self.grid_fluorescence.update_image(msg)
     
     def on_temperature_update(self, msg):
         """Handle temperature sensor update."""
@@ -232,6 +257,26 @@ class ScienceMainWindow(QMainWindow):
     def on_pressure_update(self, msg):
         """Handle pressure sensor update."""
         self.pressure_label.update_value(msg)
+    
+    def on_uv_update(self, msg):
+        """Handle UV sensor update."""
+        self.uv_label.update_value(msg)
+
+    def on_co2_update(self, msg):
+        """Handle CO2 sensor update."""
+        self.co2_label.update_value(msg)
+
+    def on_voc_update(self, msg):
+        """Handle VOC sensor update."""
+        self.voc_label.update_value(msg)
+
+    def on_hcho_update(self, msg):
+        """Handle HCHO sensor update."""
+        self.hcho_label.update_value(msg)
+
+    def on_nh3_update(self, msg):
+        """Handle NH3 sensor update."""
+        self.nh3_label.update_value(msg)
     
     def on_imu_update(self, msg):
         """Handle IMU (Roll/Pitch/Yaw) update."""

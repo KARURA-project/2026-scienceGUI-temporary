@@ -8,6 +8,7 @@ It creates mock data to demonstrate the interface functionality.
 import sys
 import os
 import types
+import random
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QTimer
 
@@ -25,6 +26,7 @@ try:
     Image = sensor_msgs.msg.Image
     NavSatFix = sensor_msgs.msg.NavSatFix
     Float64 = std_msgs.msg.Float64
+    Float32 = std_msgs.msg.Float32
     Float64MultiArray = std_msgs.msg.Float64MultiArray
     Int = std_msgs.msg.Int32
     
@@ -76,6 +78,8 @@ except ImportError:
     
     class MockFloat64:
         def __init__(self, data=0.0): self.data = data
+    class MockFloat32:
+        def __init__(self, data=0.0): self.data = data
     class MockInt32:
         def __init__(self, data=0): self.data = data
     class MockBool:
@@ -91,6 +95,7 @@ except ImportError:
     sensor_msgs.msg.Image = MockImage
     sensor_msgs.msg.NavSatFix = MockNavSatFix
     std_msgs.msg.Float64 = MockFloat64
+    std_msgs.msg.Float32 = MockFloat32
     std_msgs.msg.Float64MultiArray = MockFloat64MultiArray
     std_msgs.msg.Int32 = MockInt32
     std_msgs.msg.Bool = MockBool
@@ -100,6 +105,7 @@ except ImportError:
     Image = MockImage
     NavSatFix = MockNavSatFix
     Float64 = MockFloat64
+    Float32 = MockFloat32
     Float64MultiArray = MockFloat64MultiArray
     Int = MockInt32
 
@@ -112,12 +118,34 @@ except ImportError as e:
     sys.exit(1)
 
 
+class SmoothSensorData:
+    def __init__(self):
+        self.values = {
+            "Temperature": 25.0, "Humidity": 60.0, "Pressure": 101.3,
+            "UV": 2.0, "CO2": 600.0, "VOC": 100.0, "HCHO": 0.020, "NH3": 0.5
+        }
+        self.deltas = {
+            "Temperature": 0.5, "Humidity": 1.0, "Pressure": 0.2,
+            "UV": 0.2, "CO2": 15.0, "VOC": 5.0, "HCHO": 0.003, "NH3": 0.05
+        }
+        self.limits = {
+            "Temperature": (15.0, 35.0), "Humidity": (30.0, 90.0), "Pressure": (90.0, 110.0),
+            "UV": (0.0, 11.0), "CO2": (400.0, 1500.0), "VOC": (0.0, 500.0),
+            "HCHO": (0.000, 0.100), "NH3": (0.0, 5.0)
+        }
+
+    def get_next(self):
+        for k in self.values:
+            change = random.uniform(-self.deltas[k], self.deltas[k])
+            self.values[k] = max(self.limits[k][0], min(self.limits[k][1], self.values[k] + change))
+        return self.values
+
+
 class MockScienceBridge:
     """Mock bridge that simulates ROS 2 data without actual ROS 2."""
 
     def __init__(self):
-        # Mock signals (we'll simulate them with direct calls)
-        pass
+        self.sensor_sim = SmoothSensorData()
 
     def start(self):
         """Mock start - does nothing."""
@@ -132,25 +160,50 @@ class MockScienceBridge:
 
         # Mock Camera data (Random Noise)
         img_msg = Image()
-        window.on_downward_cam_update(img_msg)
+        window.on_downward_front_cam_update(img_msg)
+        window.on_downward_back_cam_update(img_msg)
+        window.on_arm_cam_update(img_msg)
         window.on_panoramic_cam_update(img_msg)
         window.on_box_cam_update(img_msg)
-        window.on_fluorescence_cam_update(img_msg)
+
+        # Get smooth sensor data
+        data = self.sensor_sim.get_next()
 
         # Mock temperature data
         temp_msg = Float64()
-        temp_msg.data = 25.0 + np.random.normal(0, 2)  # 25°C ± 2°C
+        temp_msg.data = data["Temperature"]
         window.on_temperature_update(temp_msg)
 
         # Mock humidity data
         humidity_msg = Float64()
-        humidity_msg.data = 60.0 + np.random.normal(0, 5)  # 60% ± 5%
+        humidity_msg.data = data["Humidity"]
         window.on_humidity_update(humidity_msg)
 
         # Mock pressure data
         pressure_msg = Float64()
-        pressure_msg.data = 101.3 + np.random.normal(0, 0.5)  # 101.3 kPa ± 0.5
+        pressure_msg.data = data["Pressure"]
         window.on_pressure_update(pressure_msg)
+        
+        # Mock new sensors data
+        uv_msg = Float64()
+        uv_msg.data = data["UV"]
+        window.on_uv_update(uv_msg)
+
+        co2_msg = Float64()
+        co2_msg.data = data["CO2"]
+        window.on_co2_update(co2_msg)
+
+        voc_msg = Float64()
+        voc_msg.data = data["VOC"]
+        window.on_voc_update(voc_msg)
+
+        hcho_msg = Float64()
+        hcho_msg.data = data["HCHO"]
+        window.on_hcho_update(hcho_msg)
+
+        nh3_msg = Float64()
+        nh3_msg.data = data["NH3"]
+        window.on_nh3_update(nh3_msg)
 
         # Mock battery data
         battery_msg = Int()

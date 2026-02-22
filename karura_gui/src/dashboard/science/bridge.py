@@ -13,7 +13,7 @@ from dashboard.backend.science_node import ScienceNode
 from dashboard.core.base_bridge import BaseROS2Bridge
 
 # Import ROS message types for signal type hints
-from std_msgs.msg import Float64, Float64MultiArray, Int32, Bool, String
+from std_msgs.msg import Float64, Float32, Float64MultiArray, Int32, Bool, String
 from sensor_msgs.msg import Image, NavSatFix
 
 
@@ -33,15 +33,23 @@ class ScienceBridge(BaseROS2Bridge):
     """
 
     # Camera signals
-    downward_cam_signal = Signal(Image)
+    downward_front_cam_signal = Signal(Image)
+    downward_back_cam_signal = Signal(Image)
+    arm_cam_signal = Signal(Image)
     panoramic_cam_signal = Signal(Image)
     box_cam_signal = Signal(Image)
-    fluorescence_cam_signal = Signal(Image)
 
     # Sensor signals
     temperature_signal = Signal(Float64)
     humidity_signal = Signal(Float64)
     pressure_signal = Signal(Float64)
+    
+    # New Sensor signals (UV, CO2, VOC, HCHO, NH3)
+    uv_signal = Signal(Float64)
+    co2_signal = Signal(Float64)
+    voc_signal = Signal(Float64)
+    hcho_signal = Signal(Float64)
+    nh3_signal = Signal(Float64)
 
     # General data signals
     roll_pitch_yaw_signal = Signal(Float64MultiArray)
@@ -83,14 +91,21 @@ class ScienceBridge(BaseROS2Bridge):
         self.science_node: ScienceNode = self.node
 
         # Register callbacks
-        self.science_node.register_callback("downward_cam", self._emit_downward_cam)
+        self.science_node.register_callback("downward_front_cam", self._emit_downward_front_cam)
+        self.science_node.register_callback("downward_back_cam", self._emit_downward_back_cam)
+        self.science_node.register_callback("arm_cam", self._emit_arm_cam)
         self.science_node.register_callback("panoramic_cam", self._emit_panoramic_cam)
         self.science_node.register_callback("box_cam", self._emit_box_cam)
-        self.science_node.register_callback("fluorescence_cam", self._emit_fluorescence_cam)
 
         self.science_node.register_callback("temperature", self._emit_temperature)
         self.science_node.register_callback("humidity", self._emit_humidity)
         self.science_node.register_callback("pressure", self._emit_pressure)
+        
+        self.science_node.register_callback("uv", self._emit_uv)
+        self.science_node.register_callback("co2", self._emit_co2)
+        self.science_node.register_callback("voc", self._emit_voc)
+        self.science_node.register_callback("hcho", self._emit_hcho)
+        self.science_node.register_callback("nh3", self._emit_nh3)
 
         self.science_node.register_callback("roll_pitch_yaw", self._emit_roll_pitch_yaw)
         self.science_node.register_callback("battery_data", self._emit_battery_data)
@@ -110,12 +125,26 @@ class ScienceBridge(BaseROS2Bridge):
     # EMITTER METHODS - CAMERA FEEDS
     # ----------------------------------------
     
-    def _emit_downward_cam(self, msg: Image):
-        """Emit downward camera image signal."""
+    def _emit_downward_front_cam(self, msg: Image):
+        """Emit downward front camera image signal."""
         try:
-            self.downward_cam_signal.emit(msg)
+            self.downward_front_cam_signal.emit(msg)
         except Exception as e:
-            self.error_signal.emit(f"Error emitting downward_cam: {e}")
+            self.error_signal.emit(f"Error emitting downward_front_cam: {e}")
+
+    def _emit_downward_back_cam(self, msg: Image):
+        """Emit downward back camera image signal."""
+        try:
+            self.downward_back_cam_signal.emit(msg)
+        except Exception as e:
+            self.error_signal.emit(f"Error emitting downward_back_cam: {e}")
+
+    def _emit_arm_cam(self, msg: Image):
+        """Emit arm camera image signal."""
+        try:
+            self.arm_cam_signal.emit(msg)
+        except Exception as e:
+            self.error_signal.emit(f"Error emitting arm_cam: {e}")
     
     def _emit_panoramic_cam(self, msg: Image):
         """Emit panoramic camera image signal."""
@@ -130,13 +159,6 @@ class ScienceBridge(BaseROS2Bridge):
             self.box_cam_signal.emit(msg)
         except Exception as e:
             self.error_signal.emit(f"Error emitting box_cam: {e}")
-    
-    def _emit_fluorescence_cam(self, msg: Image):
-        """Emit fluorescence camera image signal."""
-        try:
-            self.fluorescence_cam_signal.emit(msg)
-        except Exception as e:
-            self.error_signal.emit(f"Error emitting fluorescence_cam: {e}")
     
     # ----------------------------------------
     # EMITTER METHODS - SENSORS
@@ -162,6 +184,41 @@ class ScienceBridge(BaseROS2Bridge):
             self.pressure_signal.emit(msg)
         except Exception as e:
             self.error_signal.emit(f"Error emitting pressure: {e}")
+            
+    def _emit_uv(self, msg: Float64):
+        """Emit UV sensor signal."""
+        try:
+            self.uv_signal.emit(msg)
+        except Exception as e:
+            self.error_signal.emit(f"Error emitting uv: {e}")
+
+    def _emit_co2(self, msg: Float64):
+        """Emit CO2 sensor signal."""
+        try:
+            self.co2_signal.emit(msg)
+        except Exception as e:
+            self.error_signal.emit(f"Error emitting co2: {e}")
+
+    def _emit_voc(self, msg: Float64):
+        """Emit VOC sensor signal."""
+        try:
+            self.voc_signal.emit(msg)
+        except Exception as e:
+            self.error_signal.emit(f"Error emitting voc: {e}")
+
+    def _emit_hcho(self, msg: Float64):
+        """Emit HCHO sensor signal."""
+        try:
+            self.hcho_signal.emit(msg)
+        except Exception as e:
+            self.error_signal.emit(f"Error emitting hcho: {e}")
+
+    def _emit_nh3(self, msg: Float64):
+        """Emit NH3 sensor signal."""
+        try:
+            self.nh3_signal.emit(msg)
+        except Exception as e:
+            self.error_signal.emit(f"Error emitting nh3: {e}")
     
     # ----------------------------------------
     # EMITTER METHODS - GENERAL DATA

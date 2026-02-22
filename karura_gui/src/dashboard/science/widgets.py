@@ -118,14 +118,18 @@ class SensorGaugeWidget(QWidget):
 
     def init_ui(self):
         layout = QVBoxLayout()
+        layout.setSpacing(2)
+        layout.setContentsMargins(2, 2, 2, 2)
 
         title_label = QLabel(self.title)
         title_label.setFont(QFont("Arial", 10, QFont.Bold))
+        title_label.setMinimumWidth(50)
         layout.addWidget(title_label)
 
         self.value_label = QLabel("-- --")
         self.value_label.setFont(QFont("Courier", 14, QFont.Bold))
         self.value_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.value_label.setMinimumWidth(60)
         layout.addWidget(self.value_label)
 
         self.status_frame = QFrame()
