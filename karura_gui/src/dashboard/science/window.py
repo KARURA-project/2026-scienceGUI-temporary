@@ -105,21 +105,23 @@ class ScienceMainWindow(QMainWindow):
 
         # Sensor telemetry
         self.temperature_label = SensorGaugeWidget(
-            "Temperature", "°C", min_val=15, max_val=35
+            "Temperature", "°C", min_val=15.0, max_val=35.0
         )
         self.humidity_label = SensorGaugeWidget(
-            "Humidity", "%", min_val=30, max_val=90
+            "Humidity", "%", min_val=30.0, max_val=70.0
         )
         self.pressure_label = SensorGaugeWidget(
-            "Pressure", "kPa", min_val=90, max_val=110
+            "Pressure", "hPa", min_val=990.0, max_val=1030.0
         )
         
         # New Sensors
-        self.uv_label = SensorGaugeWidget("UV Index", "", 0, 11)
-        self.co2_label = SensorGaugeWidget("CO2", "ppm", 400, 1500)
-        self.voc_label = SensorGaugeWidget("VOC", "ppb", 0, 500)
-        self.hcho_label = SensorGaugeWidget("HCHO", "mg/m³", 0, 0.1)
-        self.nh3_label = SensorGaugeWidget("NH3", "ppm", 0, 5)
+        self.uv_label = SensorGaugeWidget("UV", "mW/cm²", 1.50, 5.00)
+        self.co2_label = SensorGaugeWidget("CO2", "ppm", 500.0, 700.0)
+        self.voc_label = SensorGaugeWidget("TVOC", "ppb", 200.0, 450.0)
+        self.hcho_label = SensorGaugeWidget("HCHO", "ppb", 0.0, 2.0)
+        self.nh3_label = SensorGaugeWidget("NH3", "ppm", 0.00, 0.20)
+        self.HCN_label = SensorGaugeWidget("HCN", "ppm", 0.00, 0.01)
+
 
         # 8 sensors in 4 rows x 2 columns
         sensor_group_layout = QGridLayout()
@@ -131,6 +133,8 @@ class ScienceMainWindow(QMainWindow):
         sensor_group_layout.addWidget(self.voc_label, 2, 1)
         sensor_group_layout.addWidget(self.hcho_label, 3, 0)
         sensor_group_layout.addWidget(self.nh3_label, 3, 1)
+        sensor_group_layout.addWidget(self.HCN_label, 4, 0)
+
 
         sensor_container = QWidget()
         sensor_container.setLayout(sensor_group_layout)
@@ -203,6 +207,7 @@ class ScienceMainWindow(QMainWindow):
         bridge.voc_signal.connect(self.on_voc_update)
         bridge.hcho_signal.connect(self.on_hcho_update)
         bridge.nh3_signal.connect(self.on_nh3_update)
+        bridge.hcn_signal.connect(self.on_hcn_update)
         
         # Other data signals
         bridge.roll_pitch_yaw_signal.connect(self.on_imu_update)
@@ -277,6 +282,10 @@ class ScienceMainWindow(QMainWindow):
     def on_nh3_update(self, msg):
         """Handle NH3 sensor update."""
         self.nh3_label.update_value(msg)
+
+    def on_hcn_update(self, msg):
+        """Handle HCN sensor update."""
+        self.HCN_label.update_value(msg)
     
     def on_imu_update(self, msg):
         """Handle IMU (Roll/Pitch/Yaw) update."""

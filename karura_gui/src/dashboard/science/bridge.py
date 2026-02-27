@@ -50,6 +50,8 @@ class ScienceBridge(BaseROS2Bridge):
     voc_signal = Signal(Float64)
     hcho_signal = Signal(Float64)
     nh3_signal = Signal(Float64)
+    hcn_signal = Signal(Float64)
+
 
     # General data signals
     roll_pitch_yaw_signal = Signal(Float64MultiArray)
@@ -106,6 +108,8 @@ class ScienceBridge(BaseROS2Bridge):
         self.science_node.register_callback("voc", self._emit_voc)
         self.science_node.register_callback("hcho", self._emit_hcho)
         self.science_node.register_callback("nh3", self._emit_nh3)
+        self.science_node.register_callback("hcn", self._emit_hcn)
+
 
         self.science_node.register_callback("roll_pitch_yaw", self._emit_roll_pitch_yaw)
         self.science_node.register_callback("battery_data", self._emit_battery_data)
@@ -219,6 +223,13 @@ class ScienceBridge(BaseROS2Bridge):
             self.nh3_signal.emit(msg)
         except Exception as e:
             self.error_signal.emit(f"Error emitting nh3: {e}")
+    
+    def _emit_hcn(self, msg: Float64):
+        """Emit HCN sensor signal."""
+        try:
+            self.hcn_signal.emit(msg)
+        except Exception as e:
+            self.error_signal.emit(f"Error emitting hcn: {e}")
     
     # ----------------------------------------
     # EMITTER METHODS - GENERAL DATA

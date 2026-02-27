@@ -121,17 +121,17 @@ except ImportError as e:
 class SmoothSensorData:
     def __init__(self):
         self.values = {
-            "Temperature": 25.0, "Humidity": 60.0, "Pressure": 101.3,
-            "UV": 2.0, "CO2": 600.0, "VOC": 100.0, "HCHO": 0.020, "NH3": 0.5
+            "Temperature": 25.0, "Humidity": 50.0, "Pressure": 1010.0,
+            "UV": 3.00, "CO2": 600.0, "TVOC": 300.0, "HCHO": 1.0, "NH3": 0.10
         }
         self.deltas = {
-            "Temperature": 0.5, "Humidity": 1.0, "Pressure": 0.2,
-            "UV": 0.2, "CO2": 15.0, "VOC": 5.0, "HCHO": 0.003, "NH3": 0.05
+            "Temperature": 0.2, "Humidity": 0.5, "Pressure": 0.5,
+            "UV": 0.05, "CO2": 2.0, "TVOC": 3.0, "HCHO": 0.05, "NH3": 0.01
         }
         self.limits = {
-            "Temperature": (15.0, 35.0), "Humidity": (30.0, 90.0), "Pressure": (90.0, 110.0),
-            "UV": (0.0, 11.0), "CO2": (400.0, 1500.0), "VOC": (0.0, 500.0),
-            "HCHO": (0.000, 0.100), "NH3": (0.0, 5.0)
+            "Temperature": (15.0, 35.0), "Humidity": (30.0, 70.0), "Pressure": (990.0, 1030.0),
+            "UV": (1.50, 5.00), "CO2": (500.0, 700.0), "TVOC": (200.0, 450.0),
+            "HCHO": (0.0, 2.0), "NH3": (0.00, 0.20)
         }
 
     def get_next(self):
@@ -160,6 +160,20 @@ class MockScienceBridge:
 
         # Mock Camera data (Random Noise)
         img_msg = Image()
+        img_msg.height = 240
+        img_msg.width = 320
+        img_msg.encoding = "rgb8"
+        img_msg.step = 320 * 3
+        
+        # Generate noise
+        noise_bytes = np.random.randint(0, 255, (240, 320, 3), dtype=np.uint8).tobytes()
+        
+        try:
+            img_msg.data = noise_bytes
+        except TypeError:
+            import array
+            img_msg.data = array.array('B', noise_bytes)
+
         window.on_downward_front_cam_update(img_msg)
         window.on_downward_back_cam_update(img_msg)
         window.on_arm_cam_update(img_msg)
@@ -194,7 +208,7 @@ class MockScienceBridge:
         window.on_co2_update(co2_msg)
 
         voc_msg = Float64()
-        voc_msg.data = data["VOC"]
+        voc_msg.data = data["TVOC"]
         window.on_voc_update(voc_msg)
 
         hcho_msg = Float64()
@@ -255,7 +269,7 @@ def main():
         # Set up timer to update data every 2 seconds
         timer = QTimer()
         timer.timeout.connect(lambda: mock_bridge.simulate_data(window))
-        timer.start(2000)  # Update every 2 seconds
+        timer.start(1000)  # Update every 1000ms (1 FPS)
 
         # Show window
         window.show()
